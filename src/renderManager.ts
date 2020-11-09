@@ -2,7 +2,7 @@
 import * as Pixi from 'pixi.js'
 import Maze from './maze'
 export default class RenderManager {
-    screenWidth: number
+    appWidth: number
     rowLength: number
     tileWidth: number //px
     ballSpeed: number
@@ -15,26 +15,26 @@ export default class RenderManager {
     appContainer!: Pixi.Container
     keyBoardStatus!: { 'w': boolean, 'a': boolean, 's': boolean, 'd': boolean }
     endCoordinates!: number[][]
-    endBounds: any
+    endBounds!: any
     mazeGraphics!: Pixi.Graphics
     ballGraphics!: Pixi.Graphics
-    keyBoardData!:any
+    keyBoardData!: any
     bindHandlePress!: (e: KeyboardEvent) => void
     bindHandleUnPress!: (e: KeyboardEvent) => void
     bindGameLoop!: () => void
     constructor(
-        screenWidth: number,
+        appWidth: number,
         rowLength: number
     ) {
         this.rowLength = rowLength
-        this.screenWidth = screenWidth
-        this.tileWidth = screenWidth / rowLength
-        this.ballSpeed = this.tileWidth / 3
+        this.appWidth = appWidth
+        this.tileWidth = appWidth / rowLength
+        this.ballSpeed = this.tileWidth / 3 //ball would go out of tile when too fast
         this.ballRadius = this.tileWidth / 4
         this.ballDiameter = this.ballRadius * 2
         this.app = new Pixi.Application({
-            width: this.screenWidth,
-            height: this.screenWidth,
+            width: this.appWidth,
+            height: this.appWidth,
             backgroundColor: 0xFFFFFF
         })
         this.init()
@@ -68,8 +68,8 @@ export default class RenderManager {
         this.ballGraphics = this.createBallGraphics()
         this.mazeGraphics = this.createMazeGraphics()
         this.appContainer.addChild(this.mazeGraphics, this.ballGraphics)
-        this.ballGraphics.x = (this.screenWidth / 2) - this.ballRadius
-        this.ballGraphics.y = (this.screenWidth / 2) - this.ballRadius
+        this.ballGraphics.x = (this.appWidth / 2) - this.ballRadius
+        this.ballGraphics.y = (this.appWidth / 2) - this.ballRadius
         this.app.stage.addChild(this.appContainer)
         this.bindGameLoop = this.gameLoop.bind(this)
         this.app.ticker.add(this.bindGameLoop)
@@ -86,7 +86,6 @@ export default class RenderManager {
         if (window.confirm('win，another game?')) {
             this.resetConfig()
             this.init()
-            // this.app.ticker.stop()
         } else {
             this.app.ticker.stop()
         }
@@ -126,7 +125,6 @@ export default class RenderManager {
         document.addEventListener('keydown', this.bindHandlePress)
     }
     removeKeyListender() {
-        console.log('remove')
         document.removeEventListener('keyup', this.bindHandleUnPress)
         document.removeEventListener('keydown', this.bindHandlePress)
     }
@@ -147,23 +145,23 @@ export default class RenderManager {
         this.keyBoardStatus[key] = false
     }
     mazeIndexMapToCanvasCoordinate(rowIndex: number, colIndex: number) {
-        const leftTop = [rowIndex * this.tileWidth, colIndex * this.tileWidth]
-        return [leftTop, leftTop.map(coordinates => coordinates + this.tileWidth)]
+        const leftTopPoint = [rowIndex * this.tileWidth, colIndex * this.tileWidth]
+        return [leftTopPoint, leftTopPoint.map(coordinates => coordinates + this.tileWidth)]
     }
     isWallByXY(x: number, y: number) {
         const tileType = this.maze.maze[Math.ceil(x / this.tileWidth) - 1][Math.ceil(y / this.tileWidth) - 1]
-        return tileType === '0' || tileType === '1'
+        return tileType === '0' || tileType === '1' //0 is edge, 1 is wall
     }
     getMaxCoordinates(direction: 'up' | 'down' | 'left' | 'right', x: number, y: number) {//when touch wall
         switch (direction) {
             case 'up':
-                return Math.floor(y - y % this.tileWidth + 1)
+                return y - y % this.tileWidth + 2
             case 'right':
-                return Math.ceil(x - (x + this.ballDiameter) % this.tileWidth + this.tileWidth - 1)
+                return x - (x + this.ballDiameter) % this.tileWidth + this.tileWidth - 2
             case 'down':
-                return Math.ceil(y - (y + this.ballDiameter) % this.tileWidth + this.tileWidth - 1)
+                return y - (y + this.ballDiameter) % this.tileWidth + this.tileWidth - 2
             case 'left':
-                return Math.floor(x - x % this.tileWidth + 1)
+                return x - x % this.tileWidth + 2
         }
     }
     isTouchWall(direction: 'up' | 'down' | 'left' | 'right', x: number, y: number) {
