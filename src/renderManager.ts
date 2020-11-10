@@ -2,6 +2,7 @@
 import * as Pixi from 'pixi.js'
 import Maze from './maze'
 import Ball from './Ball'
+import KeyBoardManager from './keyBoardManager'
 export default class RenderManager {
     appWidth: number
     rowLength: number
@@ -18,11 +19,11 @@ export default class RenderManager {
     ball!: Ball
     app!: Pixi.Application
     maze!: Maze
+    keyBoardListenManager!: KeyBoardManager
     appContainer!: Pixi.Container
     keyBoardStatus!: { 'w': boolean, 'a': boolean, 's': boolean, 'd': boolean }
     endCoordinates!: number[][]
     endBounds!: any
-    mazeGraphics!: Pixi.Graphics
     bindHandlePress!: (e: KeyboardEvent) => void
     bindHandleUnPress!: (e: KeyboardEvent) => void
     bindGameLoop!: () => void
@@ -60,26 +61,7 @@ export default class RenderManager {
                 vector: 1
             },
         }
-        this.itemData = {
-            1: {
-                name: 'wall',
-                whenTouch: () => {
 
-                }
-            },
-            7: {
-                name: 'endPoint',
-                whenTouch: () => {
-                    this.removeKeyListender()
-                    if (window.confirm('win，another game?')) {
-                        this.resetConfig()
-                        this.init()
-                    } else {
-                        this.app.ticker.stop()
-                    }
-                }
-            }
-        }
         this.init()
     }
     resetConfig() {
@@ -92,15 +74,7 @@ export default class RenderManager {
     }
     init() {
         this.appContainer = new Pixi.Container()
-        this.bindHandlePress = this.handleKeyBoardPress.bind(this)
-        this.bindHandleUnPress = this.handleKeyBoardUnPress.bind(this)
-        this.maze = new Maze(this.rowLength)
-        this.keyBoardStatus = {
-            'w': false,
-            'a': false,
-            's': false,
-            'd': false
-        }
+        this.maze = new Maze(this.rowLength, this.tileWidth)
         this.endCoordinates = this.mazeIndexMapToCanvasCoordinate(this.maze.endIndex.row, this.maze.endIndex.col)
         this.endBounds = {
             x: this.endCoordinates[0][0],
@@ -108,71 +82,24 @@ export default class RenderManager {
             width: this.tileWidth,
             height: this.tileWidth
         }
-        this.mazeGraphics = this.createMazeGraphics()
+        this.keyBoardListenManager = new KeyBoardManager()
         this.ball = new Ball(this.tileWidth)
-        this.appContainer.addChild(this.mazeGraphics, this.ball.graphics)
+        this.appContainer.addChild(this.maze.graphics, this.ball.graphics)
         this.ball.graphics.x = (this.appWidth / 2) - this.ball.radius
         this.ball.graphics.y = (this.appWidth / 2) - this.ball.radius
         this.app.stage.addChild(this.appContainer)
         this.bindGameLoop = this.gameLoop.bind(this)
         this.app.ticker.add(this.bindGameLoop)
-        this.initKeyListener()
+        this.keyBoardListenManager.initKeyListener()
     }
     handleWin() {
-        this.removeKeyListender()
+        this.keyBoardListenManager.removeKeyListender()
         if (window.confirm('win，another game?')) {
             this.resetConfig()
             this.init()
         } else {
             this.app.ticker.stop()
         }
-    }
-    createMazeGraphics() {
-        let mazeGraphics = new Pixi.Graphics()
-        this.maze.maze.forEach((row, rowIndex) => {
-            row.forEach((col, colIndex) => {
-                if (col === '1' || col === '0') { // 1 is wall, 0 is edge
-                    mazeGraphics.beginFill(0x000000);
-                    mazeGraphics.drawRect(
-                        this.tileWidth * rowIndex,
-                        this.tileWidth * colIndex,
-                        this.tileWidth,
-                        this.tileWidth)
-                    mazeGraphics.endFill();
-                }
-                else if (col === '7') { //end
-                    const endText = new Pixi.Text('終', { fontSize: this.tileWidth, fill: 0xff0000, fontWeight: 900, align: "" });
-                    mazeGraphics.addChild(endText)
-                    endText.x = rowIndex * this.tileWidth + (this.tileWidth - endText.width) / 2
-                    endText.y = colIndex * this.tileWidth + (this.tileWidth - endText.width) / 2
-                }
-            })
-        })
-        return mazeGraphics
-    }
-    initKeyListener() {
-        document.addEventListener('keyup', this.bindHandleUnPress)
-        document.addEventListener('keydown', this.bindHandlePress)
-    }
-    removeKeyListender() {
-        document.removeEventListener('keyup', this.bindHandleUnPress)
-        document.removeEventListener('keydown', this.bindHandlePress)
-    }
-    handleKeyBoardPress(e: KeyboardEvent) {
-        const { key } = e
-        if (!(key in this.keyBoardStatus)) {
-            return
-        }
-        //@ts-ignore
-        this.keyBoardStatus[key] = true
-    }
-    handleKeyBoardUnPress(e: KeyboardEvent) {
-        const { key } = e
-        if (!(key in this.keyBoardStatus)) {
-            return
-        }
-        //@ts-ignore
-        this.keyBoardStatus[key] = false
     }
     mazeIndexMapToCanvasCoordinate(rowIndex: number, colIndex: number) {
         const leftTopPoint = [rowIndex * this.tileWidth, colIndex * this.tileWidth]
@@ -235,22 +162,21 @@ export default class RenderManager {
         } else {
             this.ball.graphics[axis] += this.ball.speed * vector
         }
-
     }
     gameLoop() {
-        if (!this.keyBoardStatus['w'] || !this.keyBoardStatus['s']) {
-            if (this.keyBoardStatus['w']) {
+        if (!this.keyBoardListenManager.keyBoardStatus['w'] || !this.keyBoardListenManager.keyBoardStatus['s']) {
+            if (this.keyBoardListenManager.keyBoardStatus['w']) {
                 this.handleKeyBoardStatus('w')
             }
-            if (this.keyBoardStatus['s']) {
+            if (this.keyBoardListenManager.keyBoardStatus['s']) {
                 this.handleKeyBoardStatus('s')
             }
         }
-        if (!this.keyBoardStatus['a'] || !this.keyBoardStatus['d']) {
-            if (this.keyBoardStatus['a']) {
+        if (!this.keyBoardListenManager.keyBoardStatus['a'] || !this.keyBoardListenManager.keyBoardStatus['d']) {
+            if (this.keyBoardListenManager.keyBoardStatus['a']) {
                 this.handleKeyBoardStatus('a')
             }
-            if (this.keyBoardStatus['d']) {
+            if (this.keyBoardListenManager.keyBoardStatus['d']) {
                 this.handleKeyBoardStatus('d')
             }
         }

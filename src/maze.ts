@@ -17,18 +17,22 @@
   2:下
   3:左
 */
+import * as Pixi from 'pixi.js'
 export default class MazeArr {
     maze!: string[][]
     roadRun: string
+    tileWidth:number
     backPointList: any[]
     startPositionIndex: number
     endIndex!: {
         row: number
         col: number
     }
+    graphics!: Pixi.Graphics
     private rowLegnth: number
     private directionList: any
-    constructor(rowLegnth?: number) {
+    constructor(rowLegnth: number,tileWidth:number) {
+        this.tileWidth =tileWidth 
         this.rowLegnth = rowLegnth || 25
         this.directionList = [[-1, 0], [0, 1], [1, 0], [0, -1]]
         this.roadRun = ''
@@ -98,7 +102,7 @@ export default class MazeArr {
         });
         return aroundStaus
     }
-    
+
     handleNextDirection(around: string[]): any {
         /*
         有12最優先
@@ -192,5 +196,29 @@ export default class MazeArr {
             colIndex = colIndex + XV * 2
         }
         this.createEnd()
+        this.createMazeGraphics()
+    }
+    createMazeGraphics() {
+        let mazeGraphics = new Pixi.Graphics()
+        this.maze.forEach((row, rowIndex) => {
+            row.forEach((col, colIndex) => {
+                if (col === '1' || col === '0') { // 1 is wall, 0 is edge
+                    mazeGraphics.beginFill(0x000000);
+                    mazeGraphics.drawRect(
+                        this.tileWidth * rowIndex,
+                        this.tileWidth * colIndex,
+                        this.tileWidth,
+                        this.tileWidth)
+                    mazeGraphics.endFill();
+                }
+                else if (col === '7') { //end
+                    const endText = new Pixi.Text('終', { fontSize: this.tileWidth, fill: 0xff0000, fontWeight: 900, align: "" });
+                    mazeGraphics.addChild(endText)
+                    endText.x = rowIndex * this.tileWidth + (this.tileWidth - endText.width) / 2
+                    endText.y = colIndex * this.tileWidth + (this.tileWidth - endText.width) / 2
+                }
+            })
+        })
+        this.graphics = mazeGraphics
     }
 }
