@@ -1,19 +1,19 @@
 {
   "files": {
-    "main.js": "/mazeGame/static/js/main.da8a80e6.chunk.js",
-    "main.js.map": "/mazeGame/static/js/main.da8a80e6.chunk.js.map",
+    "main.js": "/mazeGame/static/js/main.d20c1553.chunk.js",
+    "main.js.map": "/mazeGame/static/js/main.d20c1553.chunk.js.map",
     "runtime-main.js": "/mazeGame/static/js/runtime-main.ab82081f.js",
     "runtime-main.js.map": "/mazeGame/static/js/runtime-main.ab82081f.js.map",
-    "static/js/2.2789e546.chunk.js": "/mazeGame/static/js/2.2789e546.chunk.js",
-    "static/js/2.2789e546.chunk.js.map": "/mazeGame/static/js/2.2789e546.chunk.js.map",
+    "static/js/2.7170937b.chunk.js": "/mazeGame/static/js/2.7170937b.chunk.js",
+    "static/js/2.7170937b.chunk.js.map": "/mazeGame/static/js/2.7170937b.chunk.js.map",
     "index.html": "/mazeGame/index.html",
-    "precache-manifest.a430c3b2ca7d974980d174fa9c16e666.js": "/mazeGame/precache-manifest.a430c3b2ca7d974980d174fa9c16e666.js",
+    "precache-manifest.06e038db2322a2069f01f7d4cd643d3e.js": "/mazeGame/precache-manifest.06e038db2322a2069f01f7d4cd643d3e.js",
     "service-worker.js": "/mazeGame/service-worker.js",
-    "static/js/2.2789e546.chunk.js.LICENSE.txt": "/mazeGame/static/js/2.2789e546.chunk.js.LICENSE.txt"
+    "static/js/2.7170937b.chunk.js.LICENSE.txt": "/mazeGame/static/js/2.7170937b.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
     "static/js/runtime-main.ab82081f.js",
-    "static/js/2.2789e546.chunk.js",
-    "static/js/main.da8a80e6.chunk.js"
+    "static/js/2.7170937b.chunk.js",
+    "static/js/main.d20c1553.chunk.js"
   ]
 }
