@@ -18,7 +18,7 @@
   3:左
 */
 export default class MazeArr {
-    maze: string[][]
+    maze!: string[][]
     roadRun: string
     backPointList: any[]
     startPositionIndex: number
@@ -34,7 +34,6 @@ export default class MazeArr {
         this.roadRun = ''
         this.startPositionIndex = (this.rowLegnth - 1) / 2
         this.backPointList = []
-        this.maze = this.createEmptyMaze()
         this.init()
     }
     createMazeRow() {
@@ -99,6 +98,7 @@ export default class MazeArr {
         });
         return aroundStaus
     }
+    
     handleNextDirection(around: string[]): any {
         /*
         有12最優先
@@ -166,6 +166,7 @@ export default class MazeArr {
         this.maze[this.backPointList[0].rowIndex][this.backPointList[0].colIndex] = '7'
     }
     init() {
+        this.maze = this.createEmptyMaze()
         let rowIndex = this.startPositionIndex
         let colIndex = this.startPositionIndex
         while (true) {

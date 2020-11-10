@@ -1,15 +1,21 @@
 
 import * as Pixi from 'pixi.js'
 import Maze from './maze'
+import Ball from './Ball'
 export default class RenderManager {
     appWidth: number
     rowLength: number
     tileWidth: number //px
-    ballSpeed: number
-    ballRadius: number
-    ballDiameter: number
-    directionData: any
+    directionData: {
+        [key: string]: {
+            axis: 'y' | 'x',
+            vector: -1 | 1,
+            direction: 'up' | 'left' | 'down' | 'right'
+        }
+    }
+    itemData: any
     //set in init
+    ball!: Ball
     app!: Pixi.Application
     maze!: Maze
     appContainer!: Pixi.Container
@@ -17,8 +23,6 @@ export default class RenderManager {
     endCoordinates!: number[][]
     endBounds!: any
     mazeGraphics!: Pixi.Graphics
-    ballGraphics!: Pixi.Graphics
-    keyBoardData!: any
     bindHandlePress!: (e: KeyboardEvent) => void
     bindHandleUnPress!: (e: KeyboardEvent) => void
     bindGameLoop!: () => void
@@ -29,14 +33,53 @@ export default class RenderManager {
         this.rowLength = rowLength
         this.appWidth = appWidth
         this.tileWidth = appWidth / rowLength
-        this.ballSpeed = this.tileWidth / 3 //ball would go out of tile when too fast
-        this.ballRadius = this.tileWidth / 4
-        this.ballDiameter = this.ballRadius * 2
         this.app = new Pixi.Application({
             width: this.appWidth,
             height: this.appWidth,
             backgroundColor: 0xFFFFFF
         })
+        this.directionData = {
+            w: {
+                direction: 'up',
+                axis: 'y',
+                vector: -1
+            },
+            a: {
+                direction: 'left',
+                axis: 'x',
+                vector: -1
+            },
+            s: {
+                direction: 'down',
+                axis: 'y',
+                vector: 1
+            },
+            d: {
+                direction: 'right',
+                axis: 'x',
+                vector: 1
+            },
+        }
+        this.itemData = {
+            1: {
+                name: 'wall',
+                whenTouch: () => {
+
+                }
+            },
+            7: {
+                name: 'endPoint',
+                whenTouch: () => {
+                    this.removeKeyListender()
+                    if (window.confirm('win，another game?')) {
+                        this.resetConfig()
+                        this.init()
+                    } else {
+                        this.app.ticker.stop()
+                    }
+                }
+            }
+        }
         this.init()
     }
     resetConfig() {
@@ -65,21 +108,15 @@ export default class RenderManager {
             width: this.tileWidth,
             height: this.tileWidth
         }
-        this.ballGraphics = this.createBallGraphics()
         this.mazeGraphics = this.createMazeGraphics()
-        this.appContainer.addChild(this.mazeGraphics, this.ballGraphics)
-        this.ballGraphics.x = (this.appWidth / 2) - this.ballRadius
-        this.ballGraphics.y = (this.appWidth / 2) - this.ballRadius
+        this.ball = new Ball(this.tileWidth)
+        this.appContainer.addChild(this.mazeGraphics, this.ball.graphics)
+        this.ball.graphics.x = (this.appWidth / 2) - this.ball.radius
+        this.ball.graphics.y = (this.appWidth / 2) - this.ball.radius
         this.app.stage.addChild(this.appContainer)
         this.bindGameLoop = this.gameLoop.bind(this)
         this.app.ticker.add(this.bindGameLoop)
         this.initKeyListener()
-    }
-    isWin() {
-        return this.ballGraphics.x + this.ballDiameter > this.endBounds.x &&
-            this.ballGraphics.x < this.endBounds.x + this.endBounds.width &&
-            this.ballGraphics.y + this.ballDiameter > this.endBounds.y &&
-            this.ballGraphics.y < this.endBounds.y + this.endBounds.height;
     }
     handleWin() {
         this.removeKeyListender()
@@ -89,13 +126,6 @@ export default class RenderManager {
         } else {
             this.app.ticker.stop()
         }
-    }
-    createBallGraphics() {
-        let ballGraphics = new Pixi.Graphics()
-        ballGraphics.beginFill(0xff0000);
-        ballGraphics.drawCircle(this.ballRadius, this.ballRadius, this.ballRadius)
-        ballGraphics.endFill();
-        return ballGraphics
     }
     createMazeGraphics() {
         let mazeGraphics = new Pixi.Graphics()
@@ -157,9 +187,9 @@ export default class RenderManager {
             case 'up':
                 return y - y % this.tileWidth + 2
             case 'right':
-                return x - (x + this.ballDiameter) % this.tileWidth + this.tileWidth - 2
+                return x - (x + this.ball.diameter) % this.tileWidth + this.tileWidth - 2
             case 'down':
-                return y - (y + this.ballDiameter) % this.tileWidth + this.tileWidth - 2
+                return y - (y + this.ball.diameter) % this.tileWidth + this.tileWidth - 2
             case 'left':
                 return x - x % this.tileWidth + 2
         }
@@ -167,79 +197,61 @@ export default class RenderManager {
     isTouchWall(direction: 'up' | 'down' | 'left' | 'right', x: number, y: number) {
         switch (direction) {
             case 'up':
-                if (this.isWallByXY(x, y - this.ballSpeed) ||
-                    this.isWallByXY(x + this.ballDiameter, y - this.ballSpeed)) {
+                if (this.isWallByXY(x, y - this.ball.speed) ||
+                    this.isWallByXY(x + this.ball.diameter, y - this.ball.speed)) {
                     return true
                 }
                 break
             case 'right':
-                if (this.isWallByXY(x + this.ballDiameter + this.ballSpeed, y) ||
-                    this.isWallByXY(x + this.ballDiameter + this.ballSpeed, y + this.ballDiameter)) {
+                if (this.isWallByXY(x + this.ball.diameter + this.ball.speed, y) ||
+                    this.isWallByXY(x + this.ball.diameter + this.ball.speed, y + this.ball.diameter)) {
                     return true
                 }
                 break
             case 'down':
-                if (this.isWallByXY(x, y + this.ballDiameter + this.ballSpeed) ||
-                    this.isWallByXY(x + this.ballDiameter, y + this.ballDiameter + this.ballSpeed)) {
+                if (this.isWallByXY(x, y + this.ball.diameter + this.ball.speed) ||
+                    this.isWallByXY(x + this.ball.diameter, y + this.ball.diameter + this.ball.speed)) {
                     return true
                 }
                 break
             case 'left':
-                if (this.isWallByXY(x - this.ballSpeed, y) ||
-                    this.isWallByXY(x - this.ballSpeed, y + this.ballDiameter)) {
+                if (this.isWallByXY(x - this.ball.speed, y) ||
+                    this.isWallByXY(x - this.ball.speed, y + this.ball.diameter)) {
                     return true
                 }
                 break
         }
         return false
     }
+    handleKeyBoardStatus(keyCode: 'w' | 'a' | 's' | 'd') {
+        if (this.ball.isTouchByBounds(this.endBounds)) {
+            this.handleWin()
+            return
+        }
+        const { x, y } = this.ball.graphics
+        const { vector, direction, axis } = this.directionData[keyCode]
+        if (this.isTouchWall(direction, x, y)) {
+            this.ball.graphics[axis] = this.getMaxCoordinates(direction, x, y)
+        } else {
+            this.ball.graphics[axis] += this.ball.speed * vector
+        }
+
+    }
     gameLoop() {
-        if (this.keyBoardStatus['w']) {
-            if (this.isWin()) {
-                this.handleWin()
-                return
+        if (!this.keyBoardStatus['w'] || !this.keyBoardStatus['s']) {
+            if (this.keyBoardStatus['w']) {
+                this.handleKeyBoardStatus('w')
             }
-            const { x, y } = this.ballGraphics
-            if (this.isTouchWall('up', x, y)) {
-                this.ballGraphics.y = this.getMaxCoordinates('up', x, y)
-            } else {
-                this.ballGraphics.y -= this.ballSpeed
+            if (this.keyBoardStatus['s']) {
+                this.handleKeyBoardStatus('s')
             }
         }
-        if (this.keyBoardStatus['a']) {
-            if (this.isWin()) {
-                this.handleWin()
-                return
+        if (!this.keyBoardStatus['a'] || !this.keyBoardStatus['d']) {
+            if (this.keyBoardStatus['a']) {
+                this.handleKeyBoardStatus('a')
             }
-            const { x, y } = this.ballGraphics
-            if (this.isTouchWall('left', x, y)) {
-                this.ballGraphics.x = this.getMaxCoordinates('left', x, y)
-            } else {
-                this.ballGraphics.x -= this.ballSpeed
-            }
-        }
-        if (this.keyBoardStatus['s']) {
-            if (this.isWin()) {
-                this.handleWin()
-                return
-            }
-            const { x, y } = this.ballGraphics
-            if (this.isTouchWall('down', x, y)) {
-                this.ballGraphics.y = this.getMaxCoordinates('down', x, y)
-            } else {
-                this.ballGraphics.y += this.ballSpeed
-            }
-        }
-        if (this.keyBoardStatus['d']) {
-            if (this.isWin()) {
-                this.handleWin()
-                return
-            }
-            const { x, y } = this.ballGraphics
-            if (this.isTouchWall('right', x, y)) {
-                this.ballGraphics.x = this.getMaxCoordinates('right', x, y)
-            } else {
-                this.ballGraphics.x += this.ballSpeed
+            if (this.keyBoardStatus['d']) {
+                this.handleKeyBoardStatus('d')
             }
         }
     }
